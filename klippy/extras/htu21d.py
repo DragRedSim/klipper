@@ -1,4 +1,4 @@
-# HTU21D(F)/Si7013/Si7020/Si7021/SHT21 i2c based temperature sensors support
+# HTU21D(F)/Si7013/Si7020/Si7021/SHT21/SHT3X i2c based temperature sensors support
 #
 # Copyright (C) 2020  Lucio Tarantino <lucio.tarantino@gmail.com>
 #
@@ -16,81 +16,79 @@ from . import bus
 #       Si7020 - Untested
 #       Si7021 - Tested on Pico MCU
 #       SHT21  - Untested
+#       SHT3X  - UNTested on Linux MCU (Pi)
 #
 ######################################################################
 
-HTU21D_I2C_ADDR= 0x40
-
-HTU21D_COMMANDS = {
-    'HTU21D_TEMP'       :0xE3,
-    'HTU21D_HUMID'      :0xE5,
-    'HTU21D_TEMP_NH'    :0xF3,
-    'HTU21D_HUMID_NH'   :0xF5,
-    'WRITE'             :0xE6,
-    'READ'              :0xE7,
-    'RESET'             :0xFE,
-    'SERIAL'            :[0xFA,0x0F,0xFC,0xC9],
-    'FIRMWARE_READ'     :[0x84,0xB8]
-
-}
-
-HTU21D_RESOLUTION_MASK = 0x7E;
-HTU21D_RESOLUTIONS = {
-    'TEMP14_HUM12':int('00000000',2),
-    'TEMP13_HUM10':int('10000000',2),
-    'TEMP12_HUM08':int('00000001',2),
-    'TEMP11_HUM11':int('10000001',2)
-}
-
-# Device with conversion time for tmp/resolution bit
-# The format is:
-#  <CHIPNAME>:{id:<ID>, ..<RESOlUTION>:[<temp time>,<humidity time>].. }
-HTU21D_DEVICES = {
-    'SI7013':{'id':0x0D,
-        'TEMP14_HUM12':[.11,.12],
-        'TEMP13_HUM10':[ .7, .5],
-        'TEMP12_HUM08':[ .4, .4],
-        'TEMP11_HUM11':[ .3, .7]},
-    'SI7020':{'id':0x14,
-        'TEMP14_HUM12':[.11,.12],
-        'TEMP13_HUM10':[ .7, .5],
-        'TEMP12_HUM08':[ .4, .4],
-        'TEMP11_HUM11':[ .3, .7]},
-    'SI7021':{'id':0x15,
-        'TEMP14_HUM12':[.11,.12],
-        'TEMP13_HUM10':[ .7, .5],
-        'TEMP12_HUM08':[ .4, .4],
-        'TEMP11_HUM11':[ .3, .7]},
-    'SHT21': {'id':0x31,
-        'TEMP14_HUM12':[.85,.29],
-        'TEMP13_HUM10':[.43, .9],
-        'TEMP12_HUM08':[.22, .4],
-        'TEMP11_HUM11':[.11,.15]},
-    'HTU21D':{'id':0x32,
-        'TEMP14_HUM12':[.50,.16],
-        'TEMP13_HUM10':[.25, .5],
-        'TEMP12_HUM08':[.13, .3],
-        'TEMP11_HUM11':[.12, .8]}
-}
-#temperature coefficient for RH compensation at range 0C..80C,
-#  for HTU21D & SHT21 only
-HTU21D_TEMP_COEFFICIENT= -0.15
-#crc8 polynomial for 16bit value, CRC8 -> x^8 + x^5 + x^4 + 1
-HTU21D_CRC8_POLYNOMINAL= 0x13100
-
 class HTU21D:
+    I2C_ADDR = 0x40
+    COMMANDS = {
+        'TEMP'              :0xE3,
+        'HUMID'             :0xE5,
+        'TEMP_NH'           :0xF3,
+        'HUMID_NH'          :0xF5,
+        'WRITE'             :0xE6,
+        'READ'              :0xE7,
+        'RESET'             :0xFE,
+        'SERIAL'            :[0xFA,0x0F,0xFC,0xC9],
+        'FIRMWARE_READ'     :[0x84,0xB8]
+    }
+    RESOLUTION_MASK = 0x7E;
+    RESOLUTIONS = {
+        'TEMP14_HUM12':int('00000000',2),
+        'TEMP13_HUM10':int('10000000',2),
+        'TEMP12_HUM08':int('00000001',2),
+        'TEMP11_HUM11':int('10000001',2)
+    }
+    
+    # Device with conversion time for tmp/resolution bit
+    # The format is:
+    #  <CHIPNAME>:{id:<ID>, ..<RESOlUTION>:[<temp time>,<humidity time>].. }
+    DEVICES = {
+        'SI7013':{'id':0x0D,
+            'TEMP14_HUM12':[.11,.12],
+            'TEMP13_HUM10':[ .7, .5],
+            'TEMP12_HUM08':[ .4, .4],
+            'TEMP11_HUM11':[ .3, .7]},
+        'SI7020':{'id':0x14,
+            'TEMP14_HUM12':[.11,.12],
+            'TEMP13_HUM10':[ .7, .5],
+            'TEMP12_HUM08':[ .4, .4],
+            'TEMP11_HUM11':[ .3, .7]},
+        'SI7021':{'id':0x15,
+            'TEMP14_HUM12':[.11,.12],
+            'TEMP13_HUM10':[ .7, .5],
+            'TEMP12_HUM08':[ .4, .4],
+            'TEMP11_HUM11':[ .3, .7]},
+        'SHT21': {'id':0x31,
+            'TEMP14_HUM12':[.85,.29],
+            'TEMP13_HUM10':[.43, .9],
+            'TEMP12_HUM08':[.22, .4],
+            'TEMP11_HUM11':[.11,.15]},
+        'HTU21D':{'id':0x32,
+            'TEMP14_HUM12':[.50,.16],
+            'TEMP13_HUM10':[.25, .5],
+            'TEMP12_HUM08':[.13, .3],
+            'TEMP11_HUM11':[.12, .8]}
+    }
+    #temperature coefficient for RH compensation at range 0C..80C,
+    #  for HTU21D & SHT21 only
+    HTU21D_TEMP_COEFFICIENT= -0.15
+    #crc8 polynomial for 16bit value, CRC8 -> x^8 + x^5 + x^4 + 1
+    HTU21D_CRC8_POLYNOMINAL= 0x13100
+    
     def __init__(self, config):
         self.printer = config.get_printer()
         self.name = config.get_name().split()[-1]
         self.reactor = self.printer.get_reactor()
         self.i2c = bus.MCU_I2C_from_config(
-            config, default_addr=HTU21D_I2C_ADDR, default_speed=100000)
+            config, default_addr=self.I2C_ADDR, default_speed=100000)
         self.hold_master_mode = config.getboolean('htu21d_hold_master',False)
         self.resolution = config.get('htu21d_resolution','TEMP12_HUM08')
         self.report_time = config.getint('htu21d_report_time',30,minval=5)
-        if self.resolution not in HTU21D_RESOLUTIONS:
+        if self.resolution not in self.RESOLUTIONS:
             raise config.error("Invalid HTU21D Resolution. Valid are %s"
-                % '|'.join(HTU21D_RESOLUTIONS.keys()))
+                % '|'.join(self.RESOLUTIONS.keys()))
         self.deviceId = config.get('sensor_type')
         self.temp = self.min_temp = self.max_temp = self.humidity = 0.
         self.sample_timer = self.reactor.register_timer(self._sample_htu21d)
@@ -114,13 +112,13 @@ class HTU21D:
 
     def _init_htu21d(self):
         # Device Soft Reset
-        self.i2c.i2c_write([HTU21D_COMMANDS['RESET']])
+        self.i2c.i2c_write([self.COMMANDS['RESET']])
         # Wait 15ms after reset
         self.reactor.pause(self.reactor.monotonic() + .15)
 
         # Read ChipId
-        params = self.i2c.i2c_read([HTU21D_COMMANDS['SERIAL'][2],
-                                    HTU21D_COMMANDS['SERIAL'][3]], 3)
+        params = self.i2c.i2c_read([self.COMMANDS['SERIAL'][2],
+                                    self.COMMANDS['SERIAL'][3]], 3)
         response = bytearray(params['response'])
         rdevId = response[0] << 8
         rdevId |= response[1]
@@ -143,24 +141,24 @@ class HTU21D:
                  deviceId_list[0],self.deviceId)
 
         # Set Resolution
-        params = self.i2c.i2c_read([HTU21D_COMMANDS['READ']], 1)
+        params = self.i2c.i2c_read([self.COMMANDS['READ']], 1)
         response = bytearray(params['response'])
-        registerData = response[0] & HTU21D_RESOLUTION_MASK
-        registerData |= HTU21D_RESOLUTIONS[self.resolution]
-        self.i2c.i2c_write([HTU21D_COMMANDS['WRITE']],registerData)
+        registerData = response[0] & self.RESOLUTION_MASK
+        registerData |= self.RESOLUTIONS[self.resolution]
+        self.i2c.i2c_write([self.COMMANDS['WRITE']],registerData)
         logging.info("htu21d: Setting resolution to %s " % self.resolution)
 
     def _sample_htu21d(self, eventtime):
         try:
             # Read Temeprature
             if self.hold_master_mode:
-                params = self.i2c.i2c_write([HTU21D_COMMANDS['HTU21D_TEMP']])
+                params = self.i2c.i2c_write([self.COMMANDS['TEMP']])
             else:
-                params = self.i2c.i2c_write([HTU21D_COMMANDS['HTU21D_TEMP_NH']])
+                params = self.i2c.i2c_write([self.COMMANDS['TEMP_NH']])
 
             # Wait
             self.reactor.pause(self.reactor.monotonic()
-            + HTU21D_DEVICES[self.deviceId][self.resolution][0])
+            + self.DEVICES[self.deviceId][self.resolution][0])
 
 
             params = self.i2c.i2c_read([],3)
@@ -176,9 +174,9 @@ class HTU21D:
 
             # Read Humidity
             if self.hold_master_mode:
-                self.i2c.i2c_write([HTU21D_COMMANDS['HTU21D_HUMID']])
+                self.i2c.i2c_write([self.COMMANDS['HUMID']])
             else:
-                self.i2c.i2c_write([HTU21D_COMMANDS['HTU21D_HUMID_NH']])
+                self.i2c.i2c_write([self.COMMANDS['HUMID_NH']])
 
             # Wait
             self.reactor.pause(self.reactor.monotonic()
@@ -208,7 +206,7 @@ class HTU21D:
                     and self.temp > 0 and self.temp < 80):
                     logging.debug("htu21d: Do temp compensation..")
                     self.humidity = self.humidity
-                    + (25.0 - self.temp) * HTU21D_TEMP_COEFFICIENT;
+                    + (25.0 - self.temp) * self.TEMP_COEFFICIENT;
                 logging.debug("htu21d: Humidity %.2f " % self.humidity)
         except Exception:
             logging.exception("htu21d: Error reading data")
@@ -228,7 +226,7 @@ class HTU21D:
     def _chekCRC8(self,data):
         for bit in range(0,16):
             if (data & 0x8000):
-                data = (data << 1) ^ HTU21D_CRC8_POLYNOMINAL;
+                data = (data << 1) ^ self.CRC8_POLYNOMINAL;
             else:
                 data <<= 1
         data = data >> 8
@@ -246,3 +244,57 @@ def load_config(config):
     pheater = config.get_printer().lookup_object("heaters")
     for stype in HTU21D_DEVICES:
         pheater.add_sensor_factory(stype, HTU21D)
+
+class SHT3X(HTU21D):
+    I2C_ADDR = 0x44
+    COMMANDS = {
+        'TEMP'              :0xE3,
+        'HUMID'             :0xE5,
+        'TEMP_NH'           :0xF3,
+        'HUMID_NH'          :0xF5,
+        'WRITE'             :0xE6,
+        'READ'              :0xE7,
+        'RESET'             :0xFE,
+        'SERIAL'            :[0x37,0x80],
+        'FIRMWARE_READ'     :[0x84,0xB8]
+    }
+    def _init_htu21d(self):
+        # Device Soft Reset
+        self.i2c.i2c_write([self.COMMANDS['RESET']])
+        # Wait 15ms after reset
+        self.reactor.pause(self.reactor.monotonic() + .15)
+    
+        # Read ChipId
+        params = self.i2c.i2c_read([self.COMMANDS['SERIAL'][0],
+                                    self.COMMANDS['SERIAL'][1]], 6)
+        response = bytearray(params['response'])
+        hiDevId = response[0] << 8
+        hiDevId |= response[1]
+        loDevId = response[3] << 8
+        loDevId |= response[4]
+        hiChecksum = response[2]
+        loChecksum = response[5]
+        if self._chekCRC8(hiDevId) != hiChecksum or self._chekCRC8(loDevId) != loChecksum:
+            logging.warn("htu21d: Reading deviceId !Checksum error!")
+        rdevId = response[0] << 8
+        deviceId_list = list(
+            filter(
+              lambda elem: HTU21D_DEVICES[elem]['id'] == rdevId,HTU21D_DEVICES)
+            )
+        if len(deviceId_list) != 0:
+            logging.info("htu21d: Found Device Type %s" % deviceId_list[0])
+        else:
+            logging.warn("htu21d: Unknown Device ID %#x " % rdevId)
+    
+        if(self.deviceId != deviceId_list[0]):
+            logging.warn(
+                "htu21d: Found device %s. Forcing to type %s as config.",
+                 deviceId_list[0],self.deviceId)
+    
+        # Set Resolution
+        params = self.i2c.i2c_read([self.COMMANDS['READ']], 1)
+        response = bytearray(params['response'])
+        registerData = response[0] & self.RESOLUTION_MASK
+        registerData |= self.RESOLUTIONS[self.resolution]
+        self.i2c.i2c_write([self.COMMANDS['WRITE']],registerData)
+        logging.info("htu21d: Setting resolution to %s " % self.resolution)
